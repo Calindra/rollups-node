@@ -27,6 +27,9 @@ tonic.workspace = true
 tracing.workspace = true
 url.workspace = true
 uuid = { workspace = true, features = ["v4"] }
+serde_json.workspace = true
+serde.workspace = true
+reqwest.workspace = true
 
 [dev-dependencies]
 test-fixtures = { path = "../test-fixtures" }

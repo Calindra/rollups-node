@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0 (see LICENSE)
 
 use rollups_events::{Event, InputMetadata, RollupsData, RollupsInput};
+use serde::{Deserialize, Serialize};
 use snafu::{ResultExt, Snafu};
 
 use crate::broker::{BrokerFacade, BrokerFacadeError};
@@ -65,6 +66,17 @@ pub struct Runner<Snap: SnapshotManager> {
     snapshot_manager: Snap,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct DataPush {
+    pub data_push: ProviderAndHash,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ProviderAndHash {
+    pub provider: String,
+    pub hash: String,
+}
+
 impl<Snap: SnapshotManager + std::fmt::Debug + 'static> Runner<Snap> {
     #[tracing::instrument(level = "trace", skip_all)]
     pub async fn start(
@@ -79,21 +91,124 @@ impl<Snap: SnapshotManager + std::fmt::Debug + 'static> Runner<Snap> {
         };
         let mut last_id = runner.setup().await?;
 
-        tracing::info!(last_id, "starting runner main loop");
+        tracing::info!(last_id, "starting runner main loop calindra");
         loop {
             let event = runner.consume_next(&last_id).await?;
-            tracing::info!(?event, "consumed input event");
+            tracing::info!(?event, "consumed input event calindra");
 
             match event.payload.data {
                 RollupsData::AdvanceStateInput(input) => {
-                    runner
-                        .handle_advance(
-                            event.payload.epoch_index,
-                            event.payload.inputs_sent_count,
-                            input.metadata,
-                            input.payload.into_inner(),
-                        )
-                        .await?;
+                    /* 
+                    let inputs = middleware_engine.resolve(&input)?;
+                    for input in inputs.iter() {
+                        runner
+                            .handle_advance(
+                                event.payload.epoch_index,
+                                event.payload.inputs_sent_count,
+                                input.metadata,
+                                input.payload.into_inner(),
+                            )
+                            .await?;
+                    }
+                    */
+                    let vec_u8: Vec<u8> = input.payload.clone().into_inner();
+                    let res = std::str::from_utf8(&vec_u8);
+                    match res {
+                        Ok(s) => {
+                            tracing::info!(last_id, "calindra input = {}", s);
+                            match serde_json::from_str::<DataPush>(s) {
+                                Ok(data_push) => {
+                                    let url = format!(
+                                        "https://poda.syscoin.org/vh/{}",
+                                        data_push.data_push.hash
+                                    );
+                                    let response = reqwest::get(url)
+                                        .await
+                                        // each response is wrapped in a `Result` type
+                                        // we'll unwrap here for simplicity
+                                        .unwrap()
+                                        .text()
+                                        .await;
+                                    match response {
+                                        Ok(s) => {
+                                            match hex::decode(s) {
+                                                Ok(bytes) => {
+                                                    tracing::info!(last_id, "calindra Ok!");
+                                                    runner
+                                                        .handle_advance(
+                                                            event.payload.epoch_index,
+                                                            event
+                                                                .payload
+                                                                .inputs_sent_count,
+                                                            input.metadata,
+                                                            bytes,
+                                                        )
+                                                        .await?;
+                                                }
+                                                Err(_) => {
+                                                    tracing::info!(
+                                                        last_id,
+                                                        "calindra input error hex decode"
+                                                    );
+                                                    runner
+                                                        .handle_advance(
+                                                            event.payload.epoch_index,
+                                                            event
+                                                                .payload
+                                                                .inputs_sent_count,
+                                                            input.metadata,
+                                                            input.payload.into_inner(),
+                                                        )
+                                                        .await?;
+                                                }
+                                            };
+                                        }
+                                        Err(_) => {
+                                            tracing::info!(
+                                                last_id,
+                                                "calindra input error response"
+                                            );
+                                            runner
+                                                .handle_advance(
+                                                    event.payload.epoch_index,
+                                                    event
+                                                        .payload
+                                                        .inputs_sent_count,
+                                                    input.metadata,
+                                                    input.payload.into_inner(),
+                                                )
+                                                .await?;
+                                        }
+                                    };
+                                }
+                                Err(_) => {
+                                    tracing::info!(
+                                        last_id,
+                                        "calindra input error serde"
+                                    );
+                                    runner
+                                        .handle_advance(
+                                            event.payload.epoch_index,
+                                            event.payload.inputs_sent_count,
+                                            input.metadata,
+                                            input.payload.into_inner(),
+                                        )
+                                        .await?;
+                                }
+                            }
+                        }
+                        Err(_) => {
+                            tracing::info!(last_id, "calindra input error string");
+                            runner
+                                .handle_advance(
+                                    event.payload.epoch_index,
+                                    event.payload.inputs_sent_count,
+                                    input.metadata,
+                                    input.payload.into_inner(),
+                                )
+                                .await?;
+                        }
+                    };
                 }
                 RollupsData::FinishEpoch {} => {
                     runner

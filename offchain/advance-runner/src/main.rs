@@ -5,6 +5,7 @@ use advance_runner::config::AdvanceRunnerConfig;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    println!("Advance Runner!");
     let config = AdvanceRunnerConfig::parse()?;
 
     log::configure(&config.log_config);
