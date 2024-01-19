@@ -13,7 +13,7 @@ use snapshot::{
 };
 
 pub use error::AdvanceRunnerError;
-
+mod syscoin_fetcher;
 mod broker;
 pub mod config;
 mod dapp_contract;

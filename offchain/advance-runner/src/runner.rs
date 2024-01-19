@@ -8,6 +8,7 @@ use snafu::{ResultExt, Snafu};
 use crate::broker::{BrokerFacade, BrokerFacadeError};
 use crate::server_manager::{ServerManagerError, ServerManagerFacade};
 use crate::snapshot::SnapshotManager;
+use crate::syscoin_fetcher;
 
 #[derive(Debug, Snafu)]
 pub enum RunnerError<SnapError: snafu::Error + 'static> {
@@ -98,92 +99,25 @@ impl<Snap: SnapshotManager + std::fmt::Debug + 'static> Runner<Snap> {
 
             match event.payload.data {
                 RollupsData::AdvanceStateInput(input) => {
-                    /* 
-                    let inputs = middleware_engine.resolve(&input)?;
-                    for input in inputs.iter() {
-                        runner
-                            .handle_advance(
-                                event.payload.epoch_index,
-                                event.payload.inputs_sent_count,
-                                input.metadata,
-                                input.payload.into_inner(),
-                            )
-                            .await?;
-                    }
-                    */
                     let vec_u8: Vec<u8> = input.payload.clone().into_inner();
                     let res = std::str::from_utf8(&vec_u8);
                     match res {
                         Ok(s) => {
-                            tracing::info!(last_id, "calindra input = {}", s);
+                            println!("calindra input = {}", s);
                             match serde_json::from_str::<DataPush>(s) {
-                                Ok(data_push) => {
-                                    let url = format!(
-                                        "https://poda.syscoin.org/vh/{}",
-                                        data_push.data_push.hash
-                                    );
-                                    let response = reqwest::get(url)
-                                        .await
-                                        // each response is wrapped in a `Result` type
-                                        // we'll unwrap here for simplicity
-                                        .unwrap()
-                                        .text()
-                                        .await;
-                                    match response {
-                                        Ok(s) => {
-                                            match hex::decode(s) {
-                                                Ok(bytes) => {
-                                                    tracing::info!(last_id, "calindra Ok!");
-                                                    runner
-                                                        .handle_advance(
-                                                            event.payload.epoch_index,
-                                                            event
-                                                                .payload
-                                                                .inputs_sent_count,
-                                                            input.metadata,
-                                                            bytes,
-                                                        )
-                                                        .await?;
-                                                }
-                                                Err(_) => {
-                                                    tracing::info!(
-                                                        last_id,
-                                                        "calindra input error hex decode"
-                                                    );
-                                                    runner
-                                                        .handle_advance(
-                                                            event.payload.epoch_index,
-                                                            event
-                                                                .payload
-                                                                .inputs_sent_count,
-                                                            input.metadata,
-                                                            input.payload.into_inner(),
-                                                        )
-                                                        .await?;
-                                                }
-                                            };
-                                        }
-                                        Err(_) => {
-                                            tracing::info!(
-                                                last_id,
-                                                "calindra input error response"
-                                            );
-                                            runner
-                                                .handle_advance(
-                                                    event.payload.epoch_index,
-                                                    event
-                                                        .payload
-                                                        .inputs_sent_count,
-                                                    input.metadata,
-                                                    input.payload.into_inner(),
-                                                )
-                                                .await?;
-                                        }
-                                    };
+                                Ok(dp) => {
+                                    let resp = syscoin_fetcher::fetch_blob(&dp.data_push.hash).await.expect("Unable to fetch blob data from Syscoin");
+                                    runner
+                                        .handle_advance(
+                                            event.payload.epoch_index,
+                                            event.payload.inputs_sent_count,
+                                            input.metadata,
+                                            resp,
+                                        )
+                                        .await?;
                                 }
                                 Err(_) => {
-                                    tracing::info!(
-                                        last_id,
+                                    tracing::error!(
                                         "calindra input error serde"
                                     );
                                     runner
@@ -198,7 +132,7 @@ impl<Snap: SnapshotManager + std::fmt::Debug + 'static> Runner<Snap> {
                             }
                         }
                         Err(_) => {
-                            tracing::info!(last_id, "calindra input error string");
+                            tracing::error!("calindra input error string");
                             runner
                                 .handle_advance(
                                     event.payload.epoch_index,
@@ -371,5 +305,16 @@ impl<Snap: SnapshotManager + std::fmt::Debug + 'static> Runner<Snap> {
         tracing::trace!("set latest snapshot");
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::DataPush;
+
+    #[test]
+    fn it_works() {
+        let result = "{\"input\":{\"action\":\"new_player\",\"name\":\"Bob\"},\"data_push\":{\"provider\":\"Syscoin\",\"hash\":\"3f57aba5d95da7d40bcd9f19f1e559851cd9d4f5f537c7226e7e11dab804db9e\"}}";
+        serde_json::from_str::<DataPush>(result).unwrap();
     }
 }
