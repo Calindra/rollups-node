@@ -16,7 +16,13 @@ import (
 )
 
 type Database struct {
-	db *pgxpool.Pool
+	db           *pgxpool.Pool
+	dataListener DataListener
+}
+
+type DataListener interface {
+	InsertOutput(tx pgx.Tx, output *Output) error
+	InsertReport(tx pgx.Tx, report *Report) error
 }
 
 var (
@@ -44,7 +50,7 @@ func Connect(
 			pgError = fmt.Errorf("unable to create connection pool: %w\n", err)
 		}
 
-		pgInstance = &Database{dbpool}
+		pgInstance = &Database{dbpool, nil}
 	})
 
 	return pgInstance, pgError
@@ -264,7 +270,7 @@ func (pg *Database) InsertOutput(
 	if err != nil {
 		return 0, errors.Join(ErrInsertRow, err)
 	}
-
+	err = pg.dataListener.InsertOutput(nil, output)
 	return id, nil
 }
 
@@ -287,12 +293,19 @@ func (pg *Database) InsertReport(
 		"index":   report.Index,
 		"rawData": report.RawData,
 	}
-
-	_, err := pg.db.Exec(ctx, query, args)
+	tx, err := pg.db.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrInsertRow, err)
 	}
-
+	_, err = tx.Exec(ctx, query, args)
+	if err != nil {
+		return fmt.Errorf("%w: %w", ErrInsertRow, err)
+	}
+	err = pg.dataListener.InsertReport(tx, report)
+	if err != nil {
+		return fmt.Errorf("%w: %w", ErrInsertRow, err)
+	}
+	tx.Commit(ctx)
 	return nil
 }
 

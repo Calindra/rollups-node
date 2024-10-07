@@ -10,3 +10,4 @@ machine-snapshot/**
 /cartesi-rollups-cli
 /cartesi-rollups-evm-reader
 /cartesi-rollups-node
+/dev/gen-docs
