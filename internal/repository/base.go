@@ -270,7 +270,7 @@ func (pg *Database) InsertOutput(
 	if err != nil {
 		return 0, errors.Join(ErrInsertRow, err)
 	}
-	err = pg.dataListener.InsertOutput(nil, output)
+	// err = pg.dataListener.InsertOutput(nil, output)
 	return id, nil
 }
 
@@ -301,10 +301,10 @@ func (pg *Database) InsertReport(
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrInsertRow, err)
 	}
-	err = pg.dataListener.InsertReport(tx, report)
-	if err != nil {
-		return fmt.Errorf("%w: %w", ErrInsertRow, err)
-	}
+	// err = pg.dataListener.InsertReport(tx, report)
+	// if err != nil {
+	// 	return fmt.Errorf("%w: %w", ErrInsertRow, err)
+	// }
 	tx.Commit(ctx)
 	return nil
 }

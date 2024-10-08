@@ -47,6 +47,7 @@ COPY rollups-contracts /opt/cartesi/rollups-contracts
 RUN <<EOF
     set -e
     cd /opt/cartesi/rollups-contracts
+    rm -rf /opt/cartesi/rollups-contracts/node_modules
     anvil --block-time 1 --preserve-historical-states --dump-state=anvil_state.json > anvil.log 2>&1 &
     ANVIL_PID=$!
     pnpm install
