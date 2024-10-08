@@ -58,7 +58,7 @@ RUN <<EOF
     cd deployments/localhost
     jq -c -n --argjson chainId $(cat .chainId) '[inputs | { (input_filename | gsub(".*/|[.]json$"; "")) : .address }] | add | .chainId = $chainId' *.json > ../../deployment.json
     kill -15 ${ANVIL_PID}
-    timeout 30s wait ${ANVIL_PID} || kill -9 ${ANVIL_PID}
+    sleep 30
 EOF
 
 # =============================================================================
