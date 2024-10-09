@@ -11,3 +11,6 @@ machine-snapshot/**
 /cartesi-rollups-evm-reader
 /cartesi-rollups-node
 /dev/gen-docs
+/cartesi-rollups-advancer
+/cartesi-rollups-validator
+/emulator-install

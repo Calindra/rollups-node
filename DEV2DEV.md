@@ -21,7 +21,6 @@ make toolchain
 
 sudo apt update
 sudo apt install libslirp-dev
-sudo apt install libboost-all-dev
 sudo apt install liblua5.4-dev
 # sudo apt install libboost-all-dev
 # or
