@@ -248,6 +248,28 @@ When enabled, prints server-manager output to stdout and stderr directly.
 All other log configurations are ignored."""
 
 #
+# Espresso
+#
+
+[espresso.ESPRESSO_BASE_URL]
+default = ""
+go-type = "string"
+description = """
+Espresso base url."""
+
+[espresso.ESPRESSO_STARTING_BLOCK]
+default = "0"
+go-type = "uint64"
+description = """
+Espresso starting block."""
+
+[espresso.ESPRESSO_NAMESPACE]
+default = "0"
+go-type = "uint64"
+description = """
+Espresso namespace."""
+
+#
 # Temporary
 #
 

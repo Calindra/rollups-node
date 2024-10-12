@@ -41,6 +41,9 @@ type NodeConfig struct {
 	Auth                                      Auth
 	AdvancerPollingInterval                   Duration
 	ValidatorPollingInterval                  Duration
+	EspressoBaseUrl                           string
+	EspressoStartingBlock                     uint64
+	EspressoNamespace                         uint64
 	// Temporary
 	MachineServerVerbosity cartesimachine.ServerVerbosity
 }
@@ -109,6 +112,9 @@ func FromEnv() NodeConfig {
 	}
 	config.AdvancerPollingInterval = GetAdvancerPollingInterval()
 	config.ValidatorPollingInterval = GetValidatorPollingInterval()
+	config.EspressoBaseUrl = GetBaseUrl()
+	config.EspressoStartingBlock = GetStartingBlock()
+	config.EspressoNamespace = GetNamespace()
 	// Temporary.
 	config.MachineServerVerbosity = cartesimachine.ServerVerbosity(GetMachineServerVerbosity())
 	return config
