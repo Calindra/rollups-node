@@ -4,10 +4,11 @@ pkgs.mkShell {
     libclang
     libslirp
     lua5_4_compat
-    # boost181 
+    # boost181
     boost
     wget
     pkg-config
     openssl
+    corepack
   ];
 }
