@@ -244,13 +244,3 @@ func toBytes32(data []byte) [32]byte {
 	}
 	return arr
 }
-
-func toBytes32(data []byte) [32]byte {
-	var arr [32]byte
-	if len(data) > 32 {
-		copy(arr[:], data[:32])
-	} else {
-		copy(arr[:], data)
-	}
-	return arr
-}
